@@ -66,6 +66,12 @@ async function fetchWithRetry(
             continue;
           }
         }
+       // check for rate limit
+        const resetTime = rateLimitReset
+          ? parseInt(rateLimitReset, 10) * 1000
+          : Date.now() + 60 * 60 * 1000;
+        throw new Error(`RateLimitExceeded:${resetTime}`);
+
         // Rate limit hit, try next token
         getNextToken();
         continue;
@@ -79,6 +85,12 @@ async function fetchWithRetry(
 
     } catch (error) {
       lastError = error as Error;
+
+      // Immediately rethrow if it's a RateLimitExceeded error
+      if (lastError.message?.startsWith("RateLimitExceeded:")) {
+        throw lastError;
+      }
+      
       if (attempt === retries * GITHUB_TOKENS.length - 1) throw lastError;
       getNextToken();
       await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt % retries)));
