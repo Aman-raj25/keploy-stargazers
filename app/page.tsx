@@ -56,7 +56,18 @@ export default function Home() {
       setStargazers(enrichedStargazers);
     } catch (error) {
       console.error(error);
-      alert("Error fetching stargazers");
+
+      // ✅ NEW: Handle rate limit errors
+      if (error.message?.startsWith("RateLimitExceeded:")) {
+        const resetTimestamp = parseInt(error.message.split(":")[1]);
+        const resetDate = new Date(resetTimestamp);
+        const timeString = resetDate.toLocaleTimeString();
+
+        alert(`GitHub API rate limit exceeded. Please try again after ${timeString}`);
+      } else {
+        alert("Error fetching stargazers");
+      }
+      
     } finally {
       setLoading(false);
       setHasFetched(true);
@@ -132,3 +143,4 @@ export default function Home() {
     </div>
   );
 }
+
